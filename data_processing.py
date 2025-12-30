@@ -1,28 +1,34 @@
 import pypdf
 import os
+import io  # <--- NEW IMPORT
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 import base64
+from google.api_core import exceptions
 
 load_dotenv()
 
 def get_pdf_text(pdf_docs):
     text = ""
     for pdf in pdf_docs:
-        pdf_reader = pypdf.PdfReader(pdf)
+        # FIX: Explicitly read the stream into a BytesIO buffer
+        # This prevents the "Stream Truncated" error on Streamlit Cloud
+        bytes_stream = io.BytesIO(pdf.read())
+        pdf_reader = pypdf.PdfReader(bytes_stream)
+        
         for page in pdf_reader.pages:
             text += page.extract_text() or ""
     return text
 
 def analyze_medical_image(image_file):
-    # FIXED: Using a model explicitly found in your available list
     llm = ChatGoogleGenerativeAI(
         model="gemini-flash-latest", 
         temperature=0.5,
         api_key=os.getenv("GOOGLE_API_KEY")
     )
 
+    # Convert uploaded file to bytes for processing
     image_bytes = image_file.getvalue()
     image_b64 = base64.b64encode(image_bytes).decode("utf-8")
     image_url = f"data:image/jpeg;base64,{image_b64}"
