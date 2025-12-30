@@ -7,3 +7,4 @@ faiss-cpu
 pypdf
 python-dotenv
 sentence-transformers
+google-api-core
